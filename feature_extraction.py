@@ -98,19 +98,38 @@ def fracjumps(signal):
 
 
 def max(signal):
+    """ Returns the max value of a signal
+    Args:
+        signal: (np.ndarray)
 
+    Returns:
+        (float) -   max of signal
+    """
     return np.max(signal)
 
 def min(signal):
+    """ Returns the min value of a signal
+    Args:
+        signal: (np.ndarray)
+
+    Returns:
+        (float) -   min of signal
+    """
     return np.min(signal)
 
 def slope(signal, data_type):
+    """ Returns the slope of  linear regression performed on the signal
+    Args:
+        signal: (np.ndarray)
+
+    Returns:
+        (float) -   trend
+    """
     sampling_freq = utils.get_sampling_freq(data_type)
     signal_length = utils.get_signal_length(signal, sampling_freq)
 
     time = np.arange(start= 0, stop= signal_length, step= 1/sampling_freq)
 
-    # print(f"SLOPE:\n Sampling freq: {sampling_freq}\n signal_length: {len(signal)}\n time_length: {len(time)}")
     trend_coef = np.polyfit(time, signal, deg=1)
 
     return trend_coef[0]
@@ -226,21 +245,38 @@ def extract_features_e4(e4_data_object):
         features_to_leave_out: dict - 
 
     returns:
-        struct  -   
+        (dict)
+        {
+            "ACC"   :   {
+                "baseline"  :   {
+                    feature_1   :  (np.ndarray),
+                    feature_2   :  (np.ndarray),
+                    ...
+                },
+                "sad"       :   {...}, 
+                "relaxed"   :   {...},
+                "excited"   :   {...},
+                "afraid"    :   {...}
+                
+            },
+            "BVP"   :   {...},
+            "EDA"   :   {...},
+            "HR"    :   {...},
+            "IBI"   :   {...},
+            "TEMP"  :   {...}
+        }
     """
+
     print("Extracting features")
     e4_feature_object = {}
     for data_type, emotion_list in e4_data_object.items():
-        # print(f"Data type: {data_type}")
         feature_list = get_feature_list(data_type)
         e4_feature_object[data_type] = {}
         for emotion, data in emotion_list.items():
             if emotion == "header":
                 continue
-            # print(f"Emotion: {emotion}")
             e4_feature_object[data_type][emotion] = {}
             for feature in feature_list:
-                # print(f"Feature: {feature}")
                 if feature == "MEAN":
                     feature_data = mean(data)
                 elif feature == "STD":
@@ -283,17 +319,38 @@ def extract_features_e4(e4_data_object):
 def get_e4_feature_list_header(e4_feature_object):
     header = []
     for data_type, emotions in e4_feature_object.items():
-        # print(f"fata type: {data_type}")
         features = emotions[list(emotions.keys())[0]]
-        # print(f"emotions.keys(): {emotions.keys()}")
-        # print(f"features.keys(): {features.keys()}")
         for feature, feature_data in features.items():
-            # print(f"feature: {feature}")
             header.append(str(data_type) + "_" + str(feature))
     return header
 
+
 def get_e4_feature_list(e4_feature_objects, include_baseline = False):
-    # feature_list = pd.dataframe
+    """ Extract a list of the features extracted from several experiments. 
+    The e4_feature_objects is the object returned from the function extract_features_e4(e4_data_object).
+    
+    Args:
+        e4_feature_objects: (dict)  -   Object returned from the function extract_features_e4
+        include_baseline:   (bool)  -   Whether or not to include the baseline in the feature list
+
+    Returns:
+        (dict)  -   Dict with a list over all the features for the different emotions and data types
+            {
+                "sad"   :   {
+                    "ACC_{feature_1}"   :   (np.ndarray),    -   array with the features for the different experiments
+                    "ACC_{feature_2}"   :   (np.ndarray),
+                    ...,
+                    "BVP_{feature_1}"   :   (np.ndarray),
+                    "BVP_{feature_2}"   :   (np.ndarray),
+                    ...
+                    ...
+                },
+                "relaxed"   :   {...},
+                "excited"   :   {...},
+                "afraid"    :   {...}
+            }
+
+    """
     feature_lists = {}
     feature_headers = get_e4_feature_list_header(e4_feature_objects[0])
     
@@ -303,58 +360,10 @@ def get_e4_feature_list(e4_feature_objects, include_baseline = False):
 
         feature_data = {}
         for feature_header in feature_headers:
-            # print(feature_header)
             [data_type, feature] = feature_header.split("_", 1)
             feature_data[feature_header] = []
             for feature_object in e4_feature_objects:
                 feature_data[feature_header].append(feature_object[data_type][emotion][feature])
             feature_data[feature_header] = np.array(feature_data[feature_header])
         feature_lists[emotion] = feature_data
-        # test = pd.DataFrame(data=feature_data)
-        # print(feature_data.keys())
     return feature_lists
-
-# def remove_baseline(e4_feature_object):
-#     """
-#         args:
-#             e4_feature_object   :   (struct)    -   Object returned from function "extract_features_e4()"
-
-#         returns:
-#             struct  -   Same format as e4_feature_object, but with the baseline results removed from each feature. 
-#     """
-#     # e4_feature_object[data_type][emotion][feature] = feature_data
-#     features_wo_baseline = {}
-#     for data_type, emotion_list in e4_feature_object.items():
-#         features_wo_baseline[data_type] = {}
-#         for emotion, feature_list in emotion_list.items():
-#             if emotion == "baseline":
-#                 continue
-#             features_wo_baseline[data_type][emotion] = {}
-#             for feature, feature_data in feature_list.items():
-#                 features_wo_baseline[data_type][emotion][feature] = feature_data - e4_feature_object[data_type]["baseline"][feature]
-#     return features_wo_baseline
-
-
-
-#==============================
-#           Test
-#==============================
-
-# def test():
-#     dt = 0.01
-#     time = np.arange(0,10,dt)
-
-#     signal = 2.3*time + np.sin(1*np.pi*time)
-
-#     fd = savgol_filter(signal, window_length=21, polyorder=3, deriv=1, delta=dt)
-
-#     print(fd_rms(signal))
-
-
-#     plt.figure()
-#     plt.plot(time, signal)
-#     plt.plot(time, fd)
-#     plt.show()
-
-
-# test()

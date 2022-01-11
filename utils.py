@@ -99,14 +99,3 @@ def get_list_datatypes():
 
 def get_list_emotions():
     return ["baseline", "afraid", "excited", "relaxed", "sad"]
-
-# def save_as_csv(filename, directory_path, header, data):
-#     file_object = pd.DataFrame(data = data, header = header)
-#     file_path = pathlib.Path.joinpath(directory_path,filename + ".csv")
-#     file_object.to_csv(file_path)
-
-
-# def save_object_as_json(object, directory_path, file_name):
-#     file_path = pathlib.Path.joinpath(directory_path, file_name + ".txt")
-#     with open(file_path, 'w') as file:
-#         json.dump(object, file)

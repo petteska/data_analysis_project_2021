@@ -8,8 +8,7 @@ import pathlib
 import shutil
 import pandas as pd
 import json
-# import datetime
-# import time
+
 import sys
 
 sys.path.append('./utils')
@@ -17,12 +16,6 @@ sys.path.append('./utils')
 import utils
 
 BASE_PATH_DATA = pathlib.Path("./data/")
-# BASE_PATH_DATA_FORMATED = pathlib.Path("./data_formated/")
-
-# def init_file_structure():
-#     BASE_PATH_DATA_FORMATED.mkdir(exist_ok=True)
-
-
 
 def get_time_intervals(experiment_name):
     """Gets and returns the time intervals for each of the emotions in an experiment  
@@ -42,8 +35,7 @@ def get_time_intervals(experiment_name):
     """
     experiment_path = utils.experiment_name_to_path(experiment_name)
     meta_data_path = utils.get_meta_data_path(experiment_path)
-    # print(meta_data_path)
-    # print(experiment_name)
+
     time_intervals = {}
     with open(meta_data_path, 'r') as f:
         meta_data_string = f.readlines()[-1]
@@ -65,6 +57,13 @@ def get_time_intervals(experiment_name):
 
 
 def format_e4_data(experiment_name):
+    """ Creates a copy of the e4 data, formates it and saves it in under "data/Experiment_{ID}/formated_Empatica_E4_{ID}"
+        Each of the formated files is a table with a header. The first column consists of UTC timesteps.
+    
+    Args:
+        experiment_name (string)    -   Name of the experiment on the form "Experiment_{ID}"   
+
+    """
     experiment_base_path = utils.experiment_name_to_path(experiment_name)
 
     e4_data_path = utils.get_e4_data_path(experiment_base_path)
@@ -87,7 +86,6 @@ def format_e4_data(experiment_name):
         init_time = content[0][0]
         frequency = content[0][1]
         print(f"Start time: {init_time}")
-        # print(f"Frequency: {frequency}")
 
         # Find the header of the file
         if file.name == "ACC.csv":
@@ -112,8 +110,6 @@ def format_e4_data(experiment_name):
             print("ERROR!: The file had a weird name!")
             return
 
-        
-
         if file.name == "IBI.csv":
             # IBI file has a different form than the others
             header.insert(0, "timestamp")
@@ -123,13 +119,9 @@ def format_e4_data(experiment_name):
             content = content.iloc[1:,:]
 
             # Convert timestamps to unix
-            # content.insert(0,"timestamp", np.ones(len(content.index)))
             for i, row in content.iterrows():
                 time_from_start = row["timestamp"]
                 content.at[i,"timestamp"] = init_time + time_from_start
-
-                # break
-
 
         else:
             content.columns = header
@@ -140,12 +132,17 @@ def format_e4_data(experiment_name):
             for i, row in content.iterrows():
                 content.at[i,"timestamp"] = init_time + i/frequency
 
-
-        
         content.to_csv(file, index = False)
 
 
 def is_formated(experiment_name):
+    """ Checks whether or not a folder for formated data has been created
+    Args:
+        experiment_name (string)    -   Name of the experiment on the form "Experiment_{ID}"
+    
+    Returns:
+        (bool)  -   True if folder "data/Experiment_{ID}/formated_Empatica_E4_{ID}" is found. False otherwise
+    """
     experiment_base_path = utils.experiment_name_to_path(experiment_name)
 
     for dir in experiment_base_path.iterdir():
@@ -166,7 +163,7 @@ def get_e4_data_object(experiment_name):
     Returns:
         struct: struct with the ordered e4 data on the form 
                 {
-                    "acc_data" : {
+                    "ACC"   :   {
                         "header"    :   (list), 
                         "baseline"  :   (np.ndarray), 
                         "sad"       :   (np.ndarray), 
@@ -174,11 +171,11 @@ def get_e4_data_object(experiment_name):
                         "excited"   :   (np.ndarray),
                         "afraid"    :   (np.ndarray)
                     },
-                    "bvp_data"  : {...},
-                    "gsr_data"  : {...},
-                    "hr_data"   : {...},
-                    "ibi_data"  : {...},
-                    "tmp_data"  : {...}
+                    "BVP"   :   {...},
+                    "EDA"   :   {...},
+                    "HR"    :   {...},
+                    "IBI"   :   {...},
+                    "TEMP"  :   {...}
                 }
     """
 
@@ -189,7 +186,6 @@ def get_e4_data_object(experiment_name):
     if not is_formated(experiment_name):
         print("The data is being formated")
         format_e4_data(experiment_name)
-        # print("You have to format the E4 data before you can retreive the object")
     print("e4_data is now formated")
 
     e4_formated_data_path = utils.get_e4_formated_data_path(experiment_base_path)
@@ -292,101 +288,3 @@ def get_eeg_data_object(experiment_name):
             
             eeg_data[emotion] = np.array(eeg_data[emotion])
     return eeg_data
-
-
-def test():
-    experiments = utils.get_list_of_experiments()
-    print(experiments[0])
-
-    format_e4_data(experiments[0])
-
-
-# test()
-
-
-# def main():
-#     # Create new directory
-#     init_file_structure()
-    
-
-#     # Create a copy of the wanted data from each experiment into the new folder
-#     for exp_dir in BASE_PATH_DATA.iterdir():
-#         if not exp_dir.is_dir():
-#             continue
-        
-#         exp_dir_formated_path = pathlib.Path.joinpath(BASE_PATH_DATA_FORMATED, exp_dir.name)
-        
-#         exp_dir_formated_path.mkdir(exist_ok=True)
-        
-#         print("Created folder " + str(exp_dir_formated_path))
-        
-#         # Get path to e4 and eeg data
-#         e4_dir = pathlib.Path()
-#         eeg_dir = pathlib.Path()
-        
-#         time_intervals = {} # Will contain the from and to time for all the emotions
-
-#         for data_dir in exp_dir.iterdir():
-#             if not data_dir.is_dir():
-#                 if data_dir.is_file() and data_dir.name[0:19] == "Experiment_metadata":
-#                     time_intervals = get_time_intervals(data_dir)
-#                 continue
-
-#             if data_dir.name[0:11] == "Empatica_E4":
-#                 e4_dir = data_dir
-
-#             elif data_dir.name[0:14] == "OpenBCISession":
-#                 eeg_dir = data_dir
-        
-
-#         if not bool(time_intervals): # No .txt file was found
-#             print("ERROR!! There seems to be a .txt file missing in the experiment" + exp_dir.name)
-        
-#         eeg = get_eeg_data_object(eeg_dir,time_intervals)
-
-#         print(eeg["header"])
-        
-#         # Sort e4 data
-#         # e4_data = {}
-#         # for file_path in e4_dir.iterdir():
-#         #     if not file_path.is_file() and file_path.suffix == ".csv":
-#         #         print("One of the files was not a csv file.")
-#         #         continue
-            
-            
-#         #     name = file_path.stem
-#         #     file = pd.read_csv(file_path)
-#         #     header = file.keys()
-#         #     print(header)
-#         #     data = file.to_numpy()
-#         #     print(data.shape)
-#         #     for emotion, time_interval in time_intervals.items():
-#         #         e4_data[emotion] = []
-
-#         #         row = 0
-#         #         start_time = time_intervals[emotion][0]
-#         #         end_time = time_intervals[emotion][1]
-
-#         #         while row < data.shape[0]:
-                    
-#         #             if data[row][0].round() > end_time:
-#         #                 break
-
-#         #             if data[row][0].round() >= start_time:
-#         #                 e4_data[emotion].append(data[row][0:])
-
-#         #             row += 1
-#         #     print(name)
-
-#         # print("Saving json object to dirpath " + str(exp_dir_formated_path))
-#         # save_object_as_json(e4_data, exp_dir_formated_path, "e4_data")
-#         # print(e4_data.keys())
-
-
-
-
-
-
-
-# main()
-

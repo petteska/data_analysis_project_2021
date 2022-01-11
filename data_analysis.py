@@ -1,26 +1,24 @@
-# This file will contain functionality for simple data analysis using PCA and SVM.
-
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import copy
-# import scipy
-# from scipy.signal import savgol_filter
+
 from sklearn.decomposition import PCA
-from sklearn.model_selection import LeaveOneOut, cross_val_score, train_test_split
+from sklearn.model_selection import cross_val_score, train_test_split
 import seaborn as sns
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
 
-import sys
+# import sys
 
-sys.path.append('./utils')
-# My files
-import utils
+# sys.path.append('./utils')
+# # My files
+# import utils
 
 def get_data_and_target(e4_feature_list):
     """
         args:
+
 
         returns:
             X,Y -   data matrix and target vector
@@ -32,24 +30,20 @@ def get_data_and_target(e4_feature_list):
     num_features = len(features)
     num_experiments = len(e4_feature_list[labels[0]][features[0]])
 
-    print(num_labels)
-    print(num_features)
-    print(num_experiments)
-
     X = np.ndarray([num_experiments*num_labels, num_features])
     Y = np.ndarray([num_labels*num_experiments])
 
     for i, label in enumerate(labels):
         for j,feature in enumerate(features):
-            # print(f"label: {label}, feature: {feature}, dim: {e4_feature_list[label][feature].shape}")
             X[i*num_experiments:(i+1)*num_experiments,j] = e4_feature_list[label][feature]
             Y[i*num_experiments:(i+1)*num_experiments] = np.ones([1,num_experiments])*i
-    
-    print(f"Y: {Y}\n dim X: {X.shape}, dim Y: {Y.shape}")
-    
+        
     return X,Y
 
+
 def remove_features(X, y, features, features_to_remove):
+    """
+    """
     indices = []
     features_new = copy.deepcopy(features)
     for feature in features_to_remove:
@@ -60,12 +54,10 @@ def remove_features(X, y, features, features_to_remove):
         features_new.remove(feature)
     return X_new, features_new
 
-# def get_test_and_training_set(X,Y):
-#     X_train, X_test, y_train, y_test = train_test_split(X,Y,test_size=0.1)
-#     return 
-
 
 def plot_loadings_heatmap(X, features, num_PCs = 0, title='loadings heatmap', fig_size=(8,8)):
+    """
+    """
     if num_PCs > 0:
         pca = PCA(num_PCs)
     else:
@@ -79,14 +71,10 @@ def plot_loadings_heatmap(X, features, num_PCs = 0, title='loadings heatmap', fi
     for i in range(1,loadings.shape[1]+1):
         columns.append("PC" + str(i))
     loadings_plotable = pd.DataFrame(loadings, columns =columns , index = features)
-
-    # ax = plt.axes()
     
     plt.figure(figsize = fig_size)
-    # sns.heatmap(loadings_plotable, yticklabels=True, ax=ax)
     sns.heatmap(loadings_plotable, yticklabels=True)
     plt.title(title)
-    # ax.set_title(title)
     plt.show()
 
 
@@ -94,29 +82,20 @@ def get_pca_data(e4_feature_list, plot_heatmap = False, num_components = 0):
     # Generate input matrix for PCA:
     ## This will be a 3D matrix, where the first dim are observations, the second is features, and the third is labels.
     labels = list(e4_feature_list.keys())
-    print(labels)
-    # print(labels.type())
     features = list(e4_feature_list[labels[0]].keys())
 
     num_labels = len(labels)
     num_features = len(features)
     num_experiments = len(e4_feature_list[labels[0]][features[0]])
 
-    print(num_labels)
-    print(num_features)
-    print(num_experiments)
-
     X = np.ndarray([num_experiments*num_labels, num_features])
     Y = np.ndarray([num_labels*num_experiments])
 
     for i, label in enumerate(labels):
         for j,feature in enumerate(features):
-            # print(f"label: {label}, feature: {feature}")
             X[i*num_experiments:(i+1)*num_experiments,j] = e4_feature_list[label][feature]
             Y[i*num_experiments:(i+1)*num_experiments] = np.ones([1,num_experiments])*i
     
-    print(f"Y: {Y}\n dim X: {X.shape}, dim Y: {Y.shape}")
-
     if num_components > 0:
         pca = PCA(num_components)
     else:
@@ -125,7 +104,6 @@ def get_pca_data(e4_feature_list, plot_heatmap = False, num_components = 0):
     pca.fit(X)
 
     loadings = pca.components_.T
-    print(f"loadings_dim: {loadings.shape}")
     if plot_heatmap:
         # Get columns, i.e. number of PC's
         columns = []
@@ -134,8 +112,6 @@ def get_pca_data(e4_feature_list, plot_heatmap = False, num_components = 0):
         loadings_plotable = pd.DataFrame(loadings, columns =columns , index = features)
 
         sns.heatmap(loadings_plotable, yticklabels=True)
-
-
     
     models = get_models(1,num_components)
 
@@ -149,21 +125,10 @@ def get_pca_data(e4_feature_list, plot_heatmap = False, num_components = 0):
     plt.legend()
     plt.show()
 
+#=========================
+#   Model selection
+#=========================
 
-    # # Divide into training and test set with "leave one out"
-    # loo = LeaveOneOut()
-    # # Run each experiment for each combination of indices in loo.
-    # X_train, X_test = loo.split(X)
-
-
-    # # pca = PCA()
-    # # pca.fit(X)
-
-    
-    # print(X)
-
-
-# Model selection
 def get_models(min_PC, max_PC):
     models = {}
     for i in range(min_PC, max_PC + 1):
@@ -177,7 +142,6 @@ def evaluate_models(models, data, target):
     best_model = ""
     best_score = 0
     best_degree = 0
-    # num_experiments = data.shape[0]
     
     training_scores = []
     avg_scores = []
@@ -201,6 +165,7 @@ def evaluate_models(models, data, target):
             best_degree = degree
 
     return [best_model, best_degree, best_score, np.array(training_scores), np.array(avg_scores), np.array(min_scores), np.array(max_scores), np.array(std)]
+
 
 def plot_scores(avg_scores, max_scores, model_degrees):
     plt.figure()
